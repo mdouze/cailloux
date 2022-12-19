@@ -4,6 +4,20 @@ import geometry
 import numpy as np
 
 
+class TestCircle(unittest.TestCase):
+
+    def test2(self):
+        c1 = np.array([0.4, 0.3]); r1 = 0.10
+        c2 = np.array([0.7, 0.5]); r2 = 0.25
+        
+        r3 = 0.15
+        c3s = geometry.contact_3cricle(c1, r1, c2, r2, r3)
+
+        for c3 in c3s:
+            np.testing.assert_almost_equal(geometry.norm(c1 - c3), r1 + r3)
+            np.testing.assert_almost_equal(geometry.norm(c2 - c3), r2 + r3)
+
+
 
 def random_bbox(rs): 
     xmin, xmax, ymin, ymax = rs.rand(4) 
@@ -37,11 +51,11 @@ def check_consistent(root, circles):
     if root.is_leaf:
         set1 = set()        
         for circle in root.circles: 
-            if geometry.circle_intersects_bbox(circle, root.bbox): 
+            if circle.intersects_bbox(root.bbox): 
                 set1.add(str(circle))
         set2 = set()
         for circle in circles: 
-            if geometry.circle_intersects_bbox(circle, root.bbox): 
+            if circle.intersects_bbox(root.bbox): 
                 set2.add(str(circle))
         assert set1 == set2
     else: 
@@ -56,7 +70,7 @@ class TestKDTree(unittest.TestCase):
     def test_build(self):
         rs = np.random.RandomState(456)        
         circles = [
-            (rs.rand(2), rs.rand(1) ** 5)
+            geometry.Circle(rs.rand(2), rs.rand(1) ** 5)
             for _ in range(50)
         ]
 
@@ -70,7 +84,7 @@ class TestKDTree(unittest.TestCase):
     def test_enumerate_pairs(self):     
         rs = np.random.RandomState(123)        
         circles = [
-            (rs.rand(2), rs.rand(1) ** 5)
+            geometry.Circle(rs.rand(2), rs.rand(1) ** 5)
             for _ in range(50)
         ]
 

@@ -1,8 +1,9 @@
 import numpy as np
 
 
-#####################################################
+##########################################################
 # 3 tangent circles 
+##########################################################
 
 dot = np.dot
 
@@ -89,12 +90,13 @@ def contact_3circle_inside(
 ##########################################################
 
 
+
 def intersect_range(amin, amax, bmin, bmax): 
     return not(bmax < amin or amax < bmin)
 
 
 def circle_intersects_bbox(circle, bbox): 
-    c, r = circle 
+    c, r = circle
     x, y = c
     xmin, ymin, xmax, ymax = bbox
     # horizontal intersect 
@@ -114,9 +116,19 @@ def circle_intersects_bbox(circle, bbox):
 
 def filter_with_bbox(circles, bbox):                     
     return list(filter(
-        lambda circle: circle_intersects_bbox(circle, bbox), 
+        lambda circle: circle_intersects_bbox((circle.c, circle.r), bbox), 
         circles
     ))
+
+class Circle:
+
+    def __init__(self, c, r):
+        self.c = c
+        self.r = r
+
+    def intersects_bbox(self, bbox):
+        return circle_intersects_bbox((self.c, self.r), bbox)
+
 
 max_per_leaf = 10
 
@@ -153,7 +165,7 @@ class Node:
         self.is_leaf = False
 
     def add_circle(self, circle): 
-        if not circle_intersects_bbox(circle, self.bbox): 
+        if not circle.intersects_bbox(self.bbox): 
             return 
         if self.is_leaf: 
             self.circles.append(circle)
@@ -163,7 +175,17 @@ class Node:
             self.child1.add_circle(circle)
             self.child2.add_circle(circle)
 
+            
+def enumerate_intersecting_leaves(root, circle):
+    if not circle.intersects_bbox(root.bbox):
+        return 
+    if root.is_leaf:
+        yield root
+    else:
+        enumerate_intersecting_leaves(root.child1, circle)
+        enumerate_intersecting_leaves(root.child2, circle)    
 
+            
 ##########################################################
 # Explore KDTree 
 ##########################################################
@@ -211,11 +233,10 @@ def bbox_distance(bbox1, bbox2):
         return np.hypot(x1 - x2, y1 - y2)        
     else: 
         return max(dx, dy)
-    
 
 
 
-def enumerate_pairs_2(root1, root2, distance, pref=""): 
+def enumerate_pairs_2(root1, root2, distance): 
     
     # check if the nodes are close enough
     d = bbox_distance(root1.bbox, root2.bbox)
@@ -228,16 +249,16 @@ def enumerate_pairs_2(root1, root2, distance, pref=""):
     if root1.is_leaf and root2.is_leaf: 
         yield root1, root2
     elif root1.is_leaf: 
-        yield from enumerate_pairs_2(root1, root2.child1, distance, pref+"D")
-        yield from enumerate_pairs_2(root1, root2.child2, distance, pref+"E")
+        yield from enumerate_pairs_2(root1, root2.child1, distance)
+        yield from enumerate_pairs_2(root1, root2.child2, distance)
     elif root2.is_leaf:
-        yield from enumerate_pairs_2(root1.child1, root2, distance, pref+"A")
-        yield from enumerate_pairs_2(root1.child2, root2, distance, pref+"B")
+        yield from enumerate_pairs_2(root1.child1, root2, distance)
+        yield from enumerate_pairs_2(root1.child2, root2, distance)
     else: 
-        yield from enumerate_pairs_2(root1.child1, root2.child1, distance, pref+"F")
-        yield from enumerate_pairs_2(root1.child1, root2.child2, distance, pref+"G")
-        yield from enumerate_pairs_2(root1.child2, root2.child1, distance, pref+"H")
-        yield from enumerate_pairs_2(root1.child2, root2.child2, distance, pref+"I")
+        yield from enumerate_pairs_2(root1.child1, root2.child1, distance)
+        yield from enumerate_pairs_2(root1.child1, root2.child2, distance)
+        yield from enumerate_pairs_2(root1.child2, root2.child1, distance)
+        yield from enumerate_pairs_2(root1.child2, root2.child2, distance)
         
             
 def enumerate_pairs(root, dis, pref=""):
@@ -246,9 +267,9 @@ def enumerate_pairs(root, dis, pref=""):
     if root.is_leaf: 
         return 
     else:         
-        yield from enumerate_pairs_2(root.child1, root.child2, dis, pref=pref+"/")
-        yield from enumerate_pairs(root.child1, dis, pref=pref+"1")
-        yield from enumerate_pairs(root.child2, dis, pref=pref+"2")
+        yield from enumerate_pairs_2(root.child1, root.child2, dis)
+        yield from enumerate_pairs(root.child1, dis)
+        yield from enumerate_pairs(root.child2, dis)
             
             
 
