@@ -87,6 +87,7 @@ def contact_3circle_inside(
 
 ##########################################################
 # KDTree for circles
+# From here on we use the Circle object 
 ##########################################################
 
 
@@ -199,7 +200,6 @@ def enumerate_leaves(root):
         yield from enumerate_leaves(root.child2)
         
 
-
 def range_distance(amin, amax, bmin, bmax): 
     if amax < bmin: 
         return bmin - amax
@@ -207,6 +207,7 @@ def range_distance(amin, amax, bmin, bmax):
         return amin - bmax
     # the ranges intersect
     return 0
+
 
 def nearest_corner(bbox, xy): 
     """ find nearest corner of the bbox w.r.t. xy"""
@@ -216,6 +217,7 @@ def nearest_corner(bbox, xy):
         xmin if x < (xmin + xmax) / 2 else xmax, 
         ymin if y < (ymin + ymax) / 2 else ymax
     )
+
 
 def bbox_distance(bbox1, bbox2): 
     """ minimum distance between contents of 2 bounding boxes """
@@ -233,7 +235,6 @@ def bbox_distance(bbox1, bbox2):
         return np.hypot(x1 - x2, y1 - y2)        
     else: 
         return max(dx, dy)
-
 
 
 def enumerate_pairs_2(root1, root2, distance): 
