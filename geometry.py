@@ -9,7 +9,7 @@ dot = np.dot
 
 def solve_2nd_degree(a, b, c): 
     delta = b ** 2 - 4 * a * c
-    if delta < 0: 
+    if delta < 0 or a == 0: 
         return []
     return (
         (-b + np.sqrt(delta)) / (2 * a),
@@ -130,6 +130,11 @@ class Circle:
     def intersects_bbox(self, bbox):
         return circle_intersects_bbox((self.c, self.r), bbox)
 
+    def __hash__(self):
+        return hash("%s %s" % (self.c, self.r))
+
+    def __str__(self):
+        return "(c=[%g %g], r=%g)" % (self.c[0], self.c[1], self.r)
 
 max_per_leaf = 10
 
@@ -177,6 +182,11 @@ class Node:
             self.child2.add_circle(circle)
 
             
+##########################################################
+# Explore KDTree 
+##########################################################
+
+            
 def enumerate_intersecting_leaves(root, circle):
     if not circle.intersects_bbox(root.bbox):
         return 
@@ -186,10 +196,6 @@ def enumerate_intersecting_leaves(root, circle):
         enumerate_intersecting_leaves(root.child1, circle)
         enumerate_intersecting_leaves(root.child2, circle)    
 
-            
-##########################################################
-# Explore KDTree 
-##########################################################
             
 def enumerate_leaves(root):
     """ enumerate all leaves in the KTree """
@@ -263,7 +269,8 @@ def enumerate_pairs_2(root1, root2, distance):
         
             
 def enumerate_pairs(root, dis, pref=""):
-    " yield pairs of leaves such that the min distance between leave bbox is < distance"
+    """ yield pairs of leaves such that the min distance between leave bbox
+    is < distance"""
 
     if root.is_leaf: 
         return 
