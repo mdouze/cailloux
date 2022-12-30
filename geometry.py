@@ -123,9 +123,10 @@ def filter_with_bbox(circles, bbox):
 
 class Circle:
 
-    def __init__(self, c, r):
+    def __init__(self, c, r, name=None):
         self.c = c
         self.r = r
+        self.name = name
 
     def intersects_bbox(self, bbox):
         return circle_intersects_bbox((self.c, self.r), bbox)
@@ -134,7 +135,10 @@ class Circle:
         return hash("%s %s" % (self.c, self.r))
 
     def __str__(self):
-        return "(c=[%g %g], r=%g)" % (self.c[0], self.c[1], self.r)
+        return "(c=[%g %g], r=%g%s)" % (
+            self.c[0], self.c[1], self.r,
+            " %s" % self.name if self.name is not None else ""
+        )
 
 max_per_leaf = 10
 
@@ -181,6 +185,16 @@ class Node:
             self.child1.add_circle(circle)
             self.child2.add_circle(circle)
 
+    def display(self):
+        bb = ','.join("%g" % x for x in self.bbox)
+        print(f"{self.path} is_leaf={self.is_leaf} bbox={bb}")
+        if self.is_leaf:
+            for circle in self.circles:
+                print(" " * len(self.path), circle)
+        else:
+            self.child1.display()
+            self.child2.display()
+            
             
 ##########################################################
 # Explore KDTree 
@@ -193,8 +207,8 @@ def enumerate_intersecting_leaves(root, circle):
     if root.is_leaf:
         yield root
     else:
-        enumerate_intersecting_leaves(root.child1, circle)
-        enumerate_intersecting_leaves(root.child2, circle)    
+        yield from enumerate_intersecting_leaves(root.child1, circle)
+        yield from enumerate_intersecting_leaves(root.child2, circle)    
 
             
 def enumerate_leaves(root):
