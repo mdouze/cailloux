@@ -1,6 +1,7 @@
 
 import unittest
 import geometry
+import Cgeometry
 import numpy as np
 
 
@@ -18,6 +19,28 @@ class TestCircle(unittest.TestCase):
             np.testing.assert_almost_equal(geometry.norm(c2 - c3), r2 + r3)
 
 
+    def test3C(self):
+        def to_vec2(x):
+            return Cgeometry.Vec2(x[0], x[1])
+        
+        c1 = np.array([0.4, 0.3]); r1 = 0.10
+        c2 = np.array([0.7, 0.5]); r2 = 0.25
+        
+        r3 = 0.15
+        c31 = Cgeometry.Vec2()
+        c32 = Cgeometry.Vec2()
+        
+        nv = Cgeometry.contact_3circle(to_vec2(c1), r1, to_vec2(c2), r2, r3, c31, c32)
+        self.assertEqual(nv, 2)
+        c3s = [
+            np.array([c31.x, c31.y]),
+            np.array([c32.x, c32.y])            
+        ]
+        for c3 in c3s:
+            np.testing.assert_almost_equal(geometry.norm(c1 - c3), r1 + r3)
+            np.testing.assert_almost_equal(geometry.norm(c2 - c3), r2 + r3)
+        
+            
 
 def random_bbox(rs): 
     xmin, xmax, ymin, ymax = rs.rand(4) 
