@@ -1,6 +1,7 @@
 
 #include "geometry2D.h"
 
+
 #include <cmath>
 
 int solve_2nd_degree(double a, double b, double c,
@@ -67,6 +68,35 @@ int contact_3circle(Vec2 c1, double r1,
     }
 	
     return nres;     
+}
+
+bool intersect_range(double amin, double amax, double bmin, double bmax) {
+    return !(bmax < amin || amax < bmin);
+}
+
+bool Circle::intersects(const BBox & bbox) const {
+    double x = c.x, y = c.y;
+    double xmin = bbox.Cmin.x, ymin = bbox.Cmin.y;
+    double xmax = bbox.Cmax.x, ymax = bbox.Cmax.y;
+
+    if (x + r < xmin) {
+	return false;
+    } else if (x < xmin) {
+        double yo = sqrt(r * r - sqr(xmin - x));
+        return intersect_range(y - yo, y + yo, ymin, ymax);
+    } else if (x < xmax) {
+        return intersect_range(y - r, y + r, ymin, ymax);
+    } else if (x - r < xmax) {
+        double yo = sqrt(r * r - sqr(x - xmax));
+        return intersect_range(y - yo, y + yo, ymin, ymax);
+    } else {
+	return false; 
+    }
+}
+
+
+bool Circle::intersects(const Circle  & other) const {
+    return (c - other.c).lengthSquared() < sqr(other.r + r); 
 }
 
 
