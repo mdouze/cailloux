@@ -100,3 +100,73 @@ bool Circle::intersects(const Circle  & other) const {
 }
 
 
+/********************************************
+ * KDTree
+ ********************************************/
+
+namespace {
+
+void rec_delete_nodes(Node *root) {
+    if (!root->is_leaf()) {
+	rec_delete_nodes(root->child1);
+	rec_delete_nodes(root->child2);	
+    }
+    delete root;
+}
+    
+};
+
+KDTree::~KDTree() {    
+    rec_delete_nodes(root);
+    for (auto i: flat_shapes) {
+	delete i;
+    }
+}
+
+void Node::split() {
+    Vec2 v = bbox.Cmax - bbox.Cmin;
+    BBox bbox1, bbox2; 
+    if (v.x > v.y) { // split vertically
+	double xmid = (bbox.Cmax.x - bbox.Cmin.x) / 2;
+	bbox1 = BBox{bbox.Cmin, Vec2(xmid, bbox.Cmax.y)};
+	bbox2 = BBox{Vec2(xmid, bbox.Cmin.y), bbox.Cmax};		            
+    } else { // split horizontally
+	double ymid = (bbox.Cmax.y - bbox.Cmin.y) / 2;
+	bbox1 = BBox{bbox.Cmin, Vec2(bbox.Cmax.x, ymid)};
+	bbox2 = BBox{Vec2(bbox.Cmin.x, ymid), bbox.Cmax};		            	
+    }
+    child1 = new Node(bbox1);
+    child2 = new Node(bbox2);
+
+    for(auto shape: shapes) {
+	if (shape->intersects(bbox1)) {
+	    child1->shapes.push_back(shape); 
+	}
+	if (shape->intersects(bbox2)) {
+	    child2->shapes.push_back(shape); 
+	}	
+    }
+    shapes.resize(0);       
+}
+
+void KDTree::add_shape(const Shape2D &shape_in) {
+    Shape2D *shape = shape_in.clone();    
+    flat_shapes.push_back(shape);
+    root->add_shape(shape, max_per_leaf);
+}
+    
+void Node::add_shape(Shape2D *shape, int max_per_leaf) {
+    if (!shape->intersects(bbox)) {
+	return; 
+    }
+    if (is_leaf()) {
+	shapes.push_back(shape);
+	if (shapes.size() > max_per_leaf) {
+	    split(); 
+	}
+    } else {
+	child1->add_shape(shape, max_per_leaf);
+	child2->add_shape(shape, max_per_leaf);	
+    }   
+	
+}
