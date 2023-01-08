@@ -168,8 +168,7 @@ class TestField(unittest.TestCase):
     def test_C(self):
         rs = np.random.RandomState(345)
 
-        # times = OrderedDict()
-        nc = 5
+        nc = 50
 
         radiuses = [0.5 * rs.rand() ** 3 for _ in range(nc)]
         # radiuses.sort(reverse=True)

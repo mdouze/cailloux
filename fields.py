@@ -8,6 +8,11 @@ import numpy as np
 
 
 
+######################################################################
+# Reference implementation
+######################################################################
+
+
 
 def generate_circles_gravity(c0, r0, c1, r1, radiuses):
     """
@@ -21,14 +26,13 @@ def generate_circles_gravity(c0, r0, c1, r1, radiuses):
 
     tot1 = tot2 = 0
     for i, r3 in enumerate(radiuses): 
-        # r3 = 0.25 * rs.rand() ** 3 + 0.01
         nc = len(circles)
         c3s = []
         
         # check contact with great circle 
         for k in range(nc): 
             c2, r2 = circles[k]
-            for c3 in contact_3circle_inside(c2, r2, c0, r0, r3): 
+            for c3 in contact_3circle_inside(c2, r2, c0, r0, r3):                
                 for l in range(nc): 
                     tot1 += 1
                     if l == k: 
@@ -51,14 +55,16 @@ def generate_circles_gravity(c0, r0, c1, r1, radiuses):
                         if l == k or l == j: 
                             continue
                         cl, rl = circles[l]
-                        if norm2(c3 - cl) < (rl + r3) ** 2: 
+                        if norm2(c3 - cl) < (rl + r3) ** 2:
                             break 
                     else: 
                         if norm(c0 - c3) + r3 < r0: 
                             c3s.append(c3)
                             tot2 += 1
+                        
                 
         # impossible to put this circle in the field
+        # print("REF c3s=", c3s)
         if len(c3s) == 0: 
             continue
         if True: 
@@ -68,7 +74,7 @@ def generate_circles_gravity(c0, r0, c1, r1, radiuses):
             # pick the c3 that is closest to 0
             c3s.sort(key=lambda x: norm2(x))
         c3 = c3s[0]
-        #print(f"{c3=:}")
+        # print("REF c3=", c3)
         circles.append((c3, r3))
         print(f"{i=:} nb circles: {len(circles)} "
               f"nb c3: {len(c3s)} {tot1=:} {tot2=:}", end="\r", flush=True)
@@ -209,7 +215,7 @@ def intersects_any_circle_C(cir, circles, exclude):
     for cir1 in circles: 
         if cir1.id in exclude: 
             continue
-        if cir.intersects(cir): 
+        if cir1.intersects(cir): 
             return True
     return False
 
@@ -244,16 +250,18 @@ def generate_circles_gravity_C(c0, r0, c1, r1, radiuses):
                 cir2 = circles[k]
                 for c3 in contact_3circle_C(cir1, cir2, r3): 
                     cir3 = make_circle_C(c3, r3)
-                    if not intersects_any_circle_C(cir3, circles, exclude=[cir1.id, cir2.id]): 
-                        c3s.append(c3)
-                        tot2 += 1
-                    
+                    if not intersects_any_circle_C(cir3, circles, exclude=[cir1.id, cir2.id]):
+                        if cir0.c.distance(c3) + r3 < r0: 
+                            c3s.append(c3)
+                            tot2 += 1
+                        
+        # print("c3s=", c3s)     
         if len(c3s) == 0: 
             continue
         # pick the c3 that has lowest y
         c3s.sort(key=lambda c3: c3.y)
         c3 = c3s[0]
-        #print(f"{c3=:}")
+        # print(f"{c3=:}")
         circles.append(make_circle_C(c3, r3, i))
         print(f"{i=:} nb circles: {len(circles)} "
               f"nb c3: {len(c3s)} {tot1=:} {tot2=:}", end="\r", flush=True)
