@@ -20,6 +20,13 @@
 }
 */
 
+
+
+
+
+
+
+
 %pythoncode %{
 
 def Vec2__repr__(self):
@@ -27,8 +34,10 @@ def Vec2__repr__(self):
 
 Vec2.__repr__ = Vec2__repr__
 
+def BBox__repr__(self):
+   return "Bbox(%s, %s)" % (self.Cmin, self.Cmax)
 
-
+BBox.__repr__ = BBox__repr__
 
 %}
 

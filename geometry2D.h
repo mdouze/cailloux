@@ -18,6 +18,13 @@ int contact_3circle(Vec2 c1, double r1,
 
 struct BBox {
     Vec2 Cmin, Cmax;
+
+    BBox(double xmin = 0, double ymin = 0,
+	 double xmax = 0, double ymax = 0):
+	Cmin(xmin, ymin), Cmax(xmax, ymax) {}
+
+    BBox(Vec2 Cmin, Vec2 Cmax): Cmin(Cmin), Cmax(Cmax) {}
+   
     double surface() const {
         Vec2 v = Cmax - Cmin; 
 	return v.x * v.y;
@@ -95,6 +102,23 @@ struct KDTree {
 
     void add_shape(const Shape2D &shape); 
     
-
+    ///    bool check_consistent() const; 
 };
  
+
+struct ShapeVectorIterator {
+    const std::vector<Shape2D*> &shapes;     
+    size_t i = 0; 
+    
+    ShapeVectorIterator(const std::vector<Shape2D*> &shapes):
+	shapes(shapes) {}
+
+    bool has_next() {
+	return i < shapes.size();
+    }
+
+    const Shape2D * next() {
+	return shapes[i++]; 
+    }   
+
+};

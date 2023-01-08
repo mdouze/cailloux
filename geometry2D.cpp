@@ -113,6 +113,28 @@ void rec_delete_nodes(Node *root) {
     }
     delete root;
 }
+    /*
+bool rec_check_consistent(Node * root, const std::vector<Shape2D*> flat) {
+    if (node->is_leaf()) {
+	std::unordered_set<Shape2D*> sub_shapes;
+	for (auto x : flat) {
+	    if (x.intersects(bbox)) {
+		sub_shapes.add(x); 
+	    }	   
+	}
+
+	for (auto y : shapes) {
+	    if (sub_sahpes
+	    
+	
+
+
+    } else {
+	rec_check_consistent(root->child1, flat); 
+	rec_check_consistent(root->child2, flat); 
+    }
+}
+    */
     
 };
 
@@ -127,13 +149,13 @@ void Node::split() {
     Vec2 v = bbox.Cmax - bbox.Cmin;
     BBox bbox1, bbox2; 
     if (v.x > v.y) { // split vertically
-	double xmid = (bbox.Cmax.x - bbox.Cmin.x) / 2;
-	bbox1 = BBox{bbox.Cmin, Vec2(xmid, bbox.Cmax.y)};
-	bbox2 = BBox{Vec2(xmid, bbox.Cmin.y), bbox.Cmax};		            
+	double xmid = (bbox.Cmax.x + bbox.Cmin.x) / 2;
+	bbox1 = BBox(bbox.Cmin, Vec2(xmid, bbox.Cmax.y));
+	bbox2 = BBox(Vec2(xmid, bbox.Cmin.y), bbox.Cmax);		            
     } else { // split horizontally
-	double ymid = (bbox.Cmax.y - bbox.Cmin.y) / 2;
-	bbox1 = BBox{bbox.Cmin, Vec2(bbox.Cmax.x, ymid)};
-	bbox2 = BBox{Vec2(bbox.Cmin.x, ymid), bbox.Cmax};		            	
+	double ymid = (bbox.Cmax.y + bbox.Cmin.y) / 2;
+	bbox1 = BBox(bbox.Cmin, Vec2(bbox.Cmax.x, ymid));
+	bbox2 = BBox(Vec2(bbox.Cmin.x, ymid), bbox.Cmax);		            	
     }
     child1 = new Node(bbox1);
     child2 = new Node(bbox2);

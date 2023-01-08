@@ -85,6 +85,25 @@ def check_consistent(root, circles):
         check_consistent(root.child1, circles)
         check_consistent(root.child2, circles)
 
+def check_consistent_C(root, flat_shapes):
+    #print(root.bbox)
+    if root.is_leaf():
+        set1 = set()        
+        for shape in flat_shapes:            
+            if shape.intersects(root.bbox): 
+                set1.add(shape.id)
+        set2 = set()
+        it = Cgeometry.ShapeVectorIterator(root.shapes)
+        while it.has_next(): 
+            shape = it.next() 
+            if shape.intersects(root.bbox): 
+                set2.add(shape.id)
+        # print("SETS", set1, set2)
+        assert set1 == set2
+    else: 
+        check_consistent_C(root.child1, flat_shapes)
+        check_consistent_C(root.child2, flat_shapes)
+
 
 
 class TestKDTree(unittest.TestCase):
@@ -103,6 +122,20 @@ class TestKDTree(unittest.TestCase):
 
         check_consistent(root, circles)
 
+
+    def test_build_C(self):
+        rs = np.random.RandomState(456)        
+        circles = [
+            Cgeometry.Circle(rs.rand(), rs.rand(), rs.rand() ** 5, i)
+            for i in range(50)
+        ]
+                
+        kdtree = Cgeometry.KDTree(Cgeometry.BBox(-2, -2, 2, 2))
+        for circle in circles:
+            kdtree.add_shape(circle)
+        print("MPL", kdtree.max_per_leaf)
+        check_consistent_C(kdtree.root, circles)
+               
         
     def test_enumerate_pairs(self):     
         rs = np.random.RandomState(123)        
