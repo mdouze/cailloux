@@ -164,3 +164,36 @@ class TestField(unittest.TestCase):
         circles_ref_s = set((rd(c[0]), rd(c[1]), rd(r)) for (c, r) in circles_ref)
         circles_new_s = set((rd(cir.c[0]), rd(cir.c[1]), rd(cir.r)) for cir in circles_new)
         self.assertEqual(circles_ref_s, circles_new_s)
+
+    def test_C(self):
+        rs = np.random.RandomState(345)
+
+        # times = OrderedDict()
+        nc = 5
+
+        radiuses = [0.5 * rs.rand() ** 3 for _ in range(nc)]
+        # radiuses.sort(reverse=True)
+        r0 = radiuses[0]
+
+        circles_ref = fields.generate_circles_gravity(
+            np.array([0, 0]), 1,
+            np.array([0, -1 + r0]), r0,
+            radiuses[1:]
+        )
+        print()
+
+        circles_new = fields.generate_circles_gravity_C(
+            np.array([0, 0]), 1,
+            np.array([0, -1 + r0]), r0,
+            radiuses[1:]
+        )
+
+        def rd(x): 
+            m = 1e6
+            return np.floor(x * m) / m
+
+        circles_ref_s = set((rd(c[0]), rd(c[1]), rd(r)) for (c, r) in circles_ref)
+        circles_new_s = set((rd(cir.c.x), rd(cir.c.y), rd(cir.r)) for cir in circles_new)
+        self.assertEqual(circles_ref_s, circles_new_s)
+
+

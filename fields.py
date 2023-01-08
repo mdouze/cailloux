@@ -191,6 +191,71 @@ def generate_circles_gravity_kdtree(c0, r0, c1, r1, radiuses):
     return circles
 
 
+######################################################################
+# Construction with C version
+######################################################################
+
+def contact_3circle_C(cir2, cir0, r3, inside_c2=False): 
+    c31 = Cgeometry.Vec2()
+    c32 = Cgeometry.Vec2()
+    nres = Cgeometry.contact_3circle(cir2.c, cir2.r, cir0.c, cir0.r, r3, c31, c32, inside_c2)
+    if nres == 0: 
+        return []
+    assert nres == 2
+    return [c31, c32]
 
 
+def intersects_any_circle_C(cir, circles, exclude): 
+    for cir1 in circles: 
+        if cir1.id in exclude: 
+            continue
+        if cir.intersects(cir): 
+            return True
+    return False
 
+
+def make_circle_C(c, r, id=-1): 
+    if type(c) == np.ndarray: 
+        c = Cgeometry.Vec2(float(c[0]), float(c[1]))
+    return Cgeometry.Circle(c.x, c.y, r, id)
+
+
+def generate_circles_gravity_C(c0, r0, c1, r1, radiuses): 
+    cir0 = make_circle_C(c0, r0)
+    circles = [make_circle_C(c1, r1, -1)]
+    
+    tot1 = tot2 = 0
+    for i, r3 in enumerate(radiuses): 
+        nc = len(circles)
+        c3s = []
+        
+        # check contact with great circle 
+        for k in range(nc): 
+            cir2 = circles[k]
+            for c3 in contact_3circle_C(cir2, cir0, r3, inside_c2=True): 
+                cir3 = make_circle_C(c3, r3)
+                if not intersects_any_circle_C(cir3, circles, exclude=[cir2.id]): 
+                    c3s.append(c3)
+                    tot2 += 1
+
+        for j in range(nc):
+            cir1 = circles[j]
+            for k in range(j + 1, nc): 
+                cir2 = circles[k]
+                for c3 in contact_3circle_C(cir1, cir2, r3): 
+                    cir3 = make_circle_C(c3, r3)
+                    if not intersects_any_circle_C(cir3, circles, exclude=[cir1.id, cir2.id]): 
+                        c3s.append(c3)
+                        tot2 += 1
+                    
+        if len(c3s) == 0: 
+            continue
+        # pick the c3 that has lowest y
+        c3s.sort(key=lambda c3: c3.y)
+        c3 = c3s[0]
+        #print(f"{c3=:}")
+        circles.append(make_circle_C(c3, r3, i))
+        print(f"{i=:} nb circles: {len(circles)} "
+              f"nb c3: {len(c3s)} {tot1=:} {tot2=:}", end="\r", flush=True)
+
+    return circles
