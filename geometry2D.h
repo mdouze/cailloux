@@ -33,6 +33,9 @@ struct Circle: Object2D {
     double r;
     int id;
 
+    Circle(Vec2 c, double r, int id=-1):
+    c(c), r(r), id(id) {}
+
     Circle(double x, double y, double r, int id=-1):
     c(x, y), r(r), id(id) {}
 

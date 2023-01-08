@@ -1,6 +1,6 @@
-
 import unittest
 import geometry
+import fields
 import Cgeometry
 import numpy as np
 
@@ -12,7 +12,7 @@ class TestCircle(unittest.TestCase):
         c2 = np.array([0.7, 0.5]); r2 = 0.25
         
         r3 = 0.15
-        c3s = geometry.contact_3cricle(c1, r1, c2, r2, r3)
+        c3s = geometry.contact_3circle(c1, r1, c2, r2, r3)
 
         for c3 in c3s:
             np.testing.assert_almost_equal(geometry.norm(c1 - c3), r1 + r3)
@@ -39,8 +39,8 @@ class TestCircle(unittest.TestCase):
         for c3 in c3s:
             np.testing.assert_almost_equal(geometry.norm(c1 - c3), r1 + r3)
             np.testing.assert_almost_equal(geometry.norm(c2 - c3), r2 + r3)
-        
-            
+
+              
 
 def random_bbox(rs): 
     xmin, xmax, ymin, ymax = rs.rand(4) 
@@ -135,4 +135,32 @@ class TestKDTree(unittest.TestCase):
         self.assertEqual(ref.keys(), new.keys())
     
             
+class TestField(unittest.TestCase):
 
+    def test_kdtree(self):
+        nc = 25
+        rs = np.random.RandomState(345)
+
+        radiuses = [0.5 * rs.rand() ** 3 for _ in range(nc)]
+        # radiuses.sort(reverse=True)
+        r0 = radiuses[0]
+        
+        circles_ref = fields.generate_circles_gravity(
+            np.array([0, 0]), 1,
+            np.array([0, -1 + r0]), r0,
+            radiuses[1:]
+        )
+
+        circles_new = fields.generate_circles_gravity_kdtree(
+            np.array([0, 0]), 1,
+            np.array([0, -1 + r0]), r0,
+            radiuses[1:]
+        )
+
+        def rd(x): 
+            m = 1e6
+            return np.floor(x * m) / m
+
+        circles_ref_s = set((rd(c[0]), rd(c[1]), rd(r)) for (c, r) in circles_ref)
+        circles_new_s = set((rd(cir.c[0]), rd(cir.c[1]), rd(cir.r)) for cir in circles_new)
+        self.assertEqual(circles_ref_s, circles_new_s)

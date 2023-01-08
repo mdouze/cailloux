@@ -32,7 +32,7 @@ def norm2(x):
 def norm(x): 
     return np.sqrt(norm2(x))
 
-def contact_3cricle(
+def contact_3circle(
         c1, r1, 
         c2, r2,
         r3): 
