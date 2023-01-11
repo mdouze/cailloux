@@ -133,12 +133,8 @@ struct LeafIterator {
     std::vector<const Node*> stack;
 
     LeafIterator(const KDTree & tree) {
-	// reach leftmost leaf 
-	Node *n = tree.root; 
-	do {
-	    stack.push_back(n);
-	    n = n->child1; 
-	} while(n); 
+	// reach leftmost leaf
+	stack.push_back(tree.root);
     }
 
     bool has_next() {
@@ -146,27 +142,16 @@ struct LeafIterator {
     }
 
     const Node * next() {
-	if (!has_next()) return nullptr; 	    
+	if (!has_next()) return nullptr;
+	// find next leaf
+	while(!stack.back().is_leaf()) {
+	    const Node * n = stack.back();
+	    stack.push_back(n->child2);
+	    stack.push_back(n->child1);	    
+	}
+	// we have our leaf
 	const Node *ret = stack.back();
 	stack.pop_back();
-	assert(ret->is_leaf());	
-
-	const Node *n = ret;
-	while (n == stack.back()->child2) {
-	    n = stack.back();
-	    stack.pop_back();
-	    if (stack.empty()) {
-		return ret;
-	    }		
-	}
-	assert(n == stack.back()->child1);
-	n = stack.back()->child2;
-	stack.push_back(n);
-	do {
-	    stack.push_back(n);
-	    n = n->child1; 
-	} while(n);
-    
 	return ret;    
     }       
     
