@@ -154,18 +154,21 @@ class TestKDTree(unittest.TestCase):
             else: 
                 yield from enumerate_leaves_ref(root.child1)
                 yield from enumerate_leaves_ref(root.child2)
+        sp = Cgeometry.swig_ptr_as_int
 
-        ref_leaves = set(enumerate_leaves_ref(kdtree.root))
+        ref_leaves = set([
+            sp(n) for n in enumerate_leaves_ref(kdtree.root)
+        ])
 
         new_leaves = set()
         it = Cgeometry.LeafIterator(kdtree)
         while it.has_next():
-            new_leaves.add(it.next())
+            n = it.next()
+            new_leaves.add(sp(n))
 
+        print("SIZE", len(ref_leaves), len(new_leaves))
         self.assertEqual(ref_leaves, new_leaves)       
 
-                
-            
         
     def test_enumerate_pairs(self):     
         rs = np.random.RandomState(123)        

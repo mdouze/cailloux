@@ -75,7 +75,6 @@ struct Node {
     Node * child1 = nullptr;
     Node * child2 = nullptr; 
     
-
     bool is_leaf() const {
 	return child1 == nullptr;
     }
@@ -144,8 +143,9 @@ struct LeafIterator {
     const Node * next() {
 	if (!has_next()) return nullptr;
 	// find next leaf
-	while(!stack.back().is_leaf()) {
+	while(!stack.back()->is_leaf()) {
 	    const Node * n = stack.back();
+	    stack.pop_back(); 
 	    stack.push_back(n->child2);
 	    stack.push_back(n->child1);	    
 	}

@@ -20,7 +20,13 @@
 }
 */
 
+%inline %{
 
+size_t swig_ptr_as_int(const void *x) {
+    return (size_t)x;
+}
+
+%}
 
 
 

@@ -34,4 +34,4 @@ _Cgeometry.so: geometry2D.o Cgeometry_wrap.o
 
 
 test: _Cgeometry.so
-	python -m unittest test_geometry.py
+	python -m unittest -v test_geometry.py
