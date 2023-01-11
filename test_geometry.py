@@ -133,9 +133,39 @@ class TestKDTree(unittest.TestCase):
         kdtree = Cgeometry.KDTree(Cgeometry.BBox(-2, -2, 2, 2))
         for circle in circles:
             kdtree.add_shape(circle)
-        print("MPL", kdtree.max_per_leaf)
+
         check_consistent_C(kdtree.root, circles)
                
+    def test_enumerate_leaves_C(self):
+        rs = np.random.RandomState(456)        
+        circles = [
+            Cgeometry.Circle(rs.rand(), rs.rand(), rs.rand() ** 5, i)
+            for i in range(50)
+        ]
+                
+        kdtree = Cgeometry.KDTree(Cgeometry.BBox(-2, -2, 2, 2))
+        kdtree.max_per_leaf = 4
+        for circle in circles:
+            kdtree.add_shape(circle)
+
+        def enumerate_leaves_ref(root):
+            if root.is_leaf(): 
+                yield root
+            else: 
+                yield from enumerate_leaves_ref(root.child1)
+                yield from enumerate_leaves_ref(root.child2)
+
+        ref_leaves = set(enumerate_leaves_ref(kdtree.root))
+
+        new_leaves = set()
+        it = Cgeometry.LeafIterator(kdtree)
+        while it.has_next():
+            new_leaves.add(it.next())
+
+        self.assertEqual(ref_leaves, new_leaves)       
+
+                
+            
         
     def test_enumerate_pairs(self):     
         rs = np.random.RandomState(123)        

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <vector>
+#include <cassert>
 
 #include "cinder-lite/Vector.h"
 
@@ -105,6 +106,9 @@ struct KDTree {
     ///    bool check_consistent() const; 
 };
  
+/********************************************
+ * Iterators
+ ********************************************/
 
 struct ShapeVectorIterator {
     const std::vector<Shape2D*> &shapes;     
@@ -118,7 +122,52 @@ struct ShapeVectorIterator {
     }
 
     const Shape2D * next() {
+	if(!has_next()) return nullptr; 
 	return shapes[i++]; 
     }   
 
+};
+
+
+struct LeafIterator {
+    std::vector<const Node*> stack;
+
+    LeafIterator(const KDTree & tree) {
+	// reach leftmost leaf 
+	Node *n = tree.root; 
+	do {
+	    stack.push_back(n);
+	    n = n->child1; 
+	} while(n); 
+    }
+
+    bool has_next() {
+	return !stack.empty(); 
+    }
+
+    const Node * next() {
+	if (!has_next()) return nullptr; 	    
+	const Node *ret = stack.back();
+	stack.pop_back();
+	assert(ret->is_leaf());	
+
+	const Node *n = ret;
+	while (n == stack.back()->child2) {
+	    n = stack.back();
+	    stack.pop_back();
+	    if (stack.empty()) {
+		return ret;
+	    }		
+	}
+	assert(n == stack.back()->child1);
+	n = stack.back()->child2;
+	stack.push_back(n);
+	do {
+	    stack.push_back(n);
+	    n = n->child1; 
+	} while(n);
+    
+	return ret;    
+    }       
+    
 };
