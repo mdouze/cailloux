@@ -132,21 +132,27 @@ class TestKDTree(unittest.TestCase):
         root = geometry.Node((-2, -2, 2, 2), path="")
         dis = 0.012
 
+        for circle in circles:
+            root.add_circle(circle)        
+                    
         ref = {}
 
         for leaf1 in geometry.enumerate_leaves(root):
             for leaf2 in geometry.enumerate_leaves(root):       
-                if leaf1 != leaf2 and bbox_distance(leaf1.bbox, leaf2.bbox) < dis: 
+                if leaf1 != leaf2 and geometry.bbox_distance(leaf1.bbox, leaf2.bbox) < dis: 
                     x = [str(leaf1), str(leaf2)]
                     x.sort()
                     ref[tuple(x)] = (leaf1, leaf2)
 
+                    
         new = {}
 
         for leaf1, leaf2 in geometry.enumerate_pairs(root, dis): 
             x = [str(leaf1), str(leaf2)]
             x.sort()
-            new[tuple(x)] = (leaf1, leaf2)
+            x = tuple(x)
+            assert x not in new
+            new[x] = (leaf1, leaf2)
 
         self.assertEqual(ref.keys(), new.keys())
     
@@ -157,8 +163,6 @@ def enumerate_leaves_ref_C(root):
     else: 
         yield from enumerate_leaves_ref_C(root.child1)
         yield from enumerate_leaves_ref_C(root.child2)
-
-
 
         
 class TestKDTreeC(unittest.TestCase):  

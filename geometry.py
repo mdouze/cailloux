@@ -282,7 +282,7 @@ def enumerate_pairs_2(root1, root2, distance):
         yield from enumerate_pairs_2(root1.child2, root2.child2, distance)
         
             
-def enumerate_pairs(root, dis, pref=""):
+def enumerate_pairs(root, dis):
     """ yield pairs of leaves such that the min distance between leave bbox
     is < distance"""
 

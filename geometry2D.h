@@ -194,5 +194,3 @@ struct IntersectingLeavesIterator {
 
 
 
-
-
