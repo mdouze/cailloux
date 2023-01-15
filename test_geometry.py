@@ -158,6 +158,8 @@ def enumerate_leaves_ref_C(root):
         yield from enumerate_leaves_ref_C(root.child1)
         yield from enumerate_leaves_ref_C(root.child2)
 
+
+
         
 class TestKDTreeC(unittest.TestCase):  
 
@@ -189,10 +191,7 @@ class TestKDTreeC(unittest.TestCase):
             sp(n) for n in enumerate_leaves_ref_C(kdtree.root)
         ])
 
-        new_leaves = set()
-        it = Cgeometry.LeafIterator(kdtree)
-        while it.has_next():
-            new_leaves.add(sp(it.next()))
+        new_leaves = set(sp(n) for n in Cgeometry.LeafIterator(kdtree))
 
         self.assertEqual(ref_leaves, new_leaves)       
 
@@ -208,10 +207,7 @@ class TestKDTreeC(unittest.TestCase):
             if cir.intersects(n.bbox)
         ])
 
-        new_leaves = set()
-        it = Cgeometry.IntersectingLeavesIterator(kdtree, cir)
-        while it.has_next():
-            new_leaves.add(sp(it.next()))
+        new_leaves = set(sp(n) for n in Cgeometry.IntersectingLeavesIterator(kdtree, cir))
 
         self.assertEqual(ref_leaves, new_leaves)       
         

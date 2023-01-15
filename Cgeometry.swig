@@ -45,5 +45,18 @@ def BBox__repr__(self):
 
 BBox.__repr__ = BBox__repr__
 
+
+# to convert a C++ style iterator to one that can be used
+# directly in python
+
+def py_style_iterator(self):
+    while self.has_next():
+        yield self.next()       
+
+IntersectingLeavesIterator.__iter__ = py_style_iterator
+ShapeVectorIterator.__iter__ = py_style_iterator
+LeafIterator.__iter__ = py_style_iterator
+
+
 %}
 
