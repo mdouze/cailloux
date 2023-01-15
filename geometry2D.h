@@ -156,3 +156,41 @@ struct LeafIterator {
     }       
     
 };
+
+
+struct IntersectingLeavesIterator {
+    std::vector<const Node*> stack;
+    const Shape2D &shape;
+
+    IntersectingLeavesIterator(const KDTree & tree, const Shape2D &shape):shape(shape) {
+	// reach leftmost leaf
+	if (shape.intersects(tree.root->bbox))
+	    stack.push_back(tree.root);
+    }
+
+    bool has_next() {
+	return !stack.empty(); 
+    }
+
+    const Node * next() {
+	if (!has_next()) return nullptr;
+	// find next leaf
+	while(!stack.back()->is_leaf()) {
+	    const Node * n = stack.back();
+	    stack.pop_back();
+	    if (shape.intersects(n->child2->bbox))
+		stack.push_back(n->child2);
+	    if (shape.intersects(n->child1->bbox))
+		stack.push_back(n->child1);
+	    if (!has_next()) return nullptr;
+	}
+	// we have our leaf
+	const Node *ret = stack.back();
+	stack.pop_back();
+	return ret;    
+    }       
+    
+};
+
+
+

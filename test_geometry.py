@@ -106,8 +106,7 @@ def check_consistent_C(root, flat_shapes):
 
 
 
-class TestKDTree(unittest.TestCase):
-
+class TestKDTree(unittest.TestCase):  
 
     def test_build(self):
         rs = np.random.RandomState(456)        
@@ -122,53 +121,6 @@ class TestKDTree(unittest.TestCase):
 
         check_consistent(root, circles)
 
-
-    def test_build_C(self):
-        rs = np.random.RandomState(456)        
-        circles = [
-            Cgeometry.Circle(rs.rand(), rs.rand(), rs.rand() ** 5, i)
-            for i in range(50)
-        ]
-                
-        kdtree = Cgeometry.KDTree(Cgeometry.BBox(-2, -2, 2, 2))
-        for circle in circles:
-            kdtree.add_shape(circle)
-
-        check_consistent_C(kdtree.root, circles)
-               
-    def test_enumerate_leaves_C(self):
-        rs = np.random.RandomState(456)        
-        circles = [
-            Cgeometry.Circle(rs.rand(), rs.rand(), rs.rand() ** 5, i)
-            for i in range(50)
-        ]
-                
-        kdtree = Cgeometry.KDTree(Cgeometry.BBox(-2, -2, 2, 2))
-        kdtree.max_per_leaf = 4
-        for circle in circles:
-            kdtree.add_shape(circle)
-
-        def enumerate_leaves_ref(root):
-            if root.is_leaf(): 
-                yield root
-            else: 
-                yield from enumerate_leaves_ref(root.child1)
-                yield from enumerate_leaves_ref(root.child2)
-        sp = Cgeometry.swig_ptr_as_int
-
-        ref_leaves = set([
-            sp(n) for n in enumerate_leaves_ref(kdtree.root)
-        ])
-
-        new_leaves = set()
-        it = Cgeometry.LeafIterator(kdtree)
-        while it.has_next():
-            n = it.next()
-            new_leaves.add(sp(n))
-
-        print("SIZE", len(ref_leaves), len(new_leaves))
-        self.assertEqual(ref_leaves, new_leaves)       
-
         
     def test_enumerate_pairs(self):     
         rs = np.random.RandomState(123)        
@@ -182,7 +134,6 @@ class TestKDTree(unittest.TestCase):
 
         ref = {}
 
-        print("REF")
         for leaf1 in geometry.enumerate_leaves(root):
             for leaf2 in geometry.enumerate_leaves(root):       
                 if leaf1 != leaf2 and bbox_distance(leaf1.bbox, leaf2.bbox) < dis: 
@@ -191,7 +142,6 @@ class TestKDTree(unittest.TestCase):
                     ref[tuple(x)] = (leaf1, leaf2)
 
         new = {}
-        print("NEW")
 
         for leaf1, leaf2 in geometry.enumerate_pairs(root, dis): 
             x = [str(leaf1), str(leaf2)]
@@ -200,7 +150,74 @@ class TestKDTree(unittest.TestCase):
 
         self.assertEqual(ref.keys(), new.keys())
     
+
+def enumerate_leaves_ref_C(root):
+    if root.is_leaf(): 
+        yield root
+    else: 
+        yield from enumerate_leaves_ref_C(root.child1)
+        yield from enumerate_leaves_ref_C(root.child2)
+
+        
+class TestKDTreeC(unittest.TestCase):  
+
+    def make_test_kdtree(self, seed=456):
+        rs = np.random.RandomState(456)        
+        circles = [
+            Cgeometry.Circle(rs.rand(), rs.rand(), rs.rand() ** 5, i)
+            for i in range(50)
+        ]
+                
+        kdtree = Cgeometry.KDTree(Cgeometry.BBox(-2, -2, 2, 2))
+        kdtree.max_per_leaf = 4
+        for circle in circles:
+            kdtree.add_shape(circle)
             
+        return circles, kdtree
+    
+
+    def test_build_C(self):
+        circles, kdtree = self.make_test_kdtree()
+        check_consistent_C(kdtree.root, circles)
+               
+    def test_enumerate_leaves_C(self):
+        circles, kdtree = self.make_test_kdtree()
+
+        sp = Cgeometry.swig_ptr_as_int
+
+        ref_leaves = set([
+            sp(n) for n in enumerate_leaves_ref_C(kdtree.root)
+        ])
+
+        new_leaves = set()
+        it = Cgeometry.LeafIterator(kdtree)
+        while it.has_next():
+            new_leaves.add(sp(it.next()))
+
+        self.assertEqual(ref_leaves, new_leaves)       
+
+    def test_enumerate_intersecting_leaves(self):
+        circles, kdtree = self.make_test_kdtree()
+
+        cir = Cgeometry.Circle(0.25, 0.1, 0.1)
+        
+        sp = Cgeometry.swig_ptr_as_int
+
+        ref_leaves = set([
+            sp(n) for n in enumerate_leaves_ref_C(kdtree.root)
+            if cir.intersects(n.bbox)
+        ])
+
+        new_leaves = set()
+        it = Cgeometry.IntersectingLeavesIterator(kdtree, cir)
+        while it.has_next():
+            new_leaves.add(sp(it.next()))
+
+        self.assertEqual(ref_leaves, new_leaves)       
+        
+        
+        
+        
 class TestField(unittest.TestCase):
 
     def test_kdtree(self):
@@ -261,4 +278,34 @@ class TestField(unittest.TestCase):
         circles_new_s = set((rd(cir.c.x), rd(cir.c.y), rd(cir.r)) for cir in circles_new)
         self.assertEqual(circles_ref_s, circles_new_s)
 
+    def test_C_kdtree(self):
+        rs = np.random.RandomState(345)
 
+        nc = 50
+
+        radiuses = [0.5 * rs.rand() ** 3 for _ in range(nc)]
+        # radiuses.sort(reverse=True)
+        r0 = radiuses[0]
+
+        circles_ref = fields.generate_circles_gravity(
+            np.array([0, 0]), 1,
+            np.array([0, -1 + r0]), r0,
+            radiuses[1:]
+        )
+        print()
+
+        circles_new = fields.generate_circles_gravity_C(
+            np.array([0, 0]), 1,
+            np.array([0, -1 + r0]), r0,
+            radiuses[1:]
+        )
+
+        def rd(x): 
+            m = 1e6
+            return np.floor(x * m) / m
+
+        circles_ref_s = set((rd(c[0]), rd(c[1]), rd(r)) for (c, r) in circles_ref)
+        circles_new_s = set((rd(cir.c.x), rd(cir.c.y), rd(cir.r)) for cir in circles_new)
+        self.assertEqual(circles_ref_s, circles_new_s)
+
+    
