@@ -50,6 +50,10 @@ def random_bbox(rs):
         ymin, ymax = ymax, ymin
     return (xmin, ymin, xmax + 0.1, ymax + 0.1)        
 
+def transpose_bbox(bbox):
+    xmin, ymin, xmax, ymax = bbox
+    return (ymin, xmin, ymax, xmax) 
+
 
 def plot_bbox(bbox): 
     xmin, ymin, xmax, ymax = bbox
@@ -68,7 +72,13 @@ class TestBBoxDistance(unittest.TestCase):
             d21 = geometry.bbox_distance(bbox2, bbox1)
             # print(bbox1, bbox2, d12, d21)
             np.testing.assert_almost_equal(d12, d21)
+            # + transpose
+            bbox1t = transpose_bbox(bbox1)
+            bbox2t = transpose_bbox(bbox2)
+            d12t = geometry.bbox_distance(bbox1t, bbox2t)
+            np.testing.assert_almost_equal(d12, d12t)
 
+            
 def check_consistent(root, circles):
     
     if root.is_leaf:
@@ -167,11 +177,11 @@ def enumerate_leaves_ref_C(root):
         
 class TestKDTreeC(unittest.TestCase):  
 
-    def make_test_kdtree(self, seed=456):
+    def make_test_kdtree(self, seed=456, ncircle=50):
         rs = np.random.RandomState(456)        
         circles = [
             Cgeometry.Circle(rs.rand(), rs.rand(), rs.rand() ** 5, i)
-            for i in range(50)
+            for i in range(ncircle)
         ]
                 
         kdtree = Cgeometry.KDTree(Cgeometry.BBox(-2, -2, 2, 2))
@@ -186,7 +196,7 @@ class TestKDTreeC(unittest.TestCase):
         circles, kdtree = self.make_test_kdtree()
         check_consistent_C(kdtree.root, circles)
                
-    def test_enumerate_leaves_C(self):
+    def test_enumerate_leaves(self):
         circles, kdtree = self.make_test_kdtree()
 
         sp = Cgeometry.swig_ptr_as_int
@@ -215,6 +225,34 @@ class TestKDTreeC(unittest.TestCase):
 
         self.assertEqual(ref_leaves, new_leaves)       
         
+    def test_enumerate_pairs(self):     
+        circles, kdtree = self.make_test_kdtree(ncircle=30)
+        dis = 0.012
+
+        sp = Cgeometry.swig_ptr_as_int
+        ref = {}
+
+        print("NB circles", len(circles))
+        print("NB leaves", len([leaf1 for leaf1 in Cgeometry.LeafIterator(kdtree)]))
+        
+        for leaf1 in Cgeometry.LeafIterator(kdtree):
+            for leaf2 in Cgeometry.LeafIterator(kdtree):
+                if sp(leaf1) != sp(leaf2) and leaf1.bbox.distance(leaf2.bbox) < dis: 
+                    x = tuple(sorted([sp(leaf1), sp(leaf2)]))
+                    ref[tuple(x)] = (leaf1, leaf2)
+                    
+        new = {}
+
+        for twoleaves in Cgeometry.TwoLeavesIterator(kdtree, dis):
+            leaf1, leaf2 = twoleaves.node1, twoleaves.node2
+            x = tuple(sorted([sp(leaf1), sp(leaf2)]))
+            assert x not in new
+            new[x] = (leaf1, leaf2)
+
+        # print(list(ref.keys()))
+        # print(list(new.keys()))
+        
+        self.assertEqual(ref.keys(), new.keys())
         
         
         

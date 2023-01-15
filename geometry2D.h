@@ -30,6 +30,13 @@ struct BBox {
         Vec2 v = Cmax - Cmin; 
 	return v.x * v.y;
     }
+
+    // shortest distance between the two
+    double distance(const BBox & other) const;
+
+    // nearest bbox corner w.r.t. p
+    Vec2 nearest_corner(Vec2 p) const; 
+	
 };
 
 struct Shape2D {
@@ -193,4 +200,97 @@ struct IntersectingLeavesIterator {
 };
 
 
+struct TwoNodes {
+    const Node* node1;
+    const Node *node2;
 
+    TwoNodes(const Node* node1 = nullptr, 
+	     const Node *node2 = nullptr):
+	node1(node1), node2(node2) {}
+
+};
+
+struct TwoLeavesIterator {
+    double distance;
+    std::vector<TwoNodes> stack;
+
+    TwoLeavesIterator(const KDTree & tree, double distance):
+	distance(distance) {
+	push_single(tree.root); 
+	while(!is_returnable()) {
+	    step_stack();
+	}
+    }
+
+
+    bool is_returnable() const {
+	if (stack.empty())
+	    return true;
+	TwoNodes top = stack.back();
+	if(!top.node2)
+	    return false;
+	return top.node1->is_leaf() && top.node2->is_leaf(); 	    
+    }
+
+    void push_single(const Node *n) {
+	if (!n->is_leaf()) {
+	    stack.push_back(TwoNodes(n));
+	}
+    }
+		     
+    void push_pair(const Node *node1, const Node *node2) {
+	if (node1->bbox.distance(node2->bbox) < distance) {
+	    stack.push_back(TwoNodes(node1, node2)); 
+	}
+    }
+    
+    void step_stack() {
+	assert(!is_returnable()); 
+	const TwoNodes & top = stack.back();
+	stack.pop_back();
+	const Node *root1 = top.node1;	    
+	const Node *root2 = top.node2;
+	if(!top.node2) {
+	    if(root1->is_leaf()) {
+		// nothing
+	    } else {
+		push_pair(root1->child1, root1->child2);
+		push_single(root1->child1);
+		push_single(root1->child2);		
+	    }	    
+	} else {
+	    if (root1->is_leaf()) {
+		assert(!root2->is_leaf());
+		push_pair(root1, root2->child1);
+		push_pair(root1, root2->child2);
+	    } else if(root2->is_leaf()) {
+		push_pair(root1->child1, root2);
+		push_pair(root1->child2, root2);		
+	    } else {
+		push_pair(root1->child1, root2->child1);
+		push_pair(root1->child2, root2->child1);		
+		push_pair(root1->child1, root2->child2);
+		push_pair(root1->child2, root2->child2);		
+	    }  	
+	}	
+    }
+    
+    bool has_next() {
+	return !stack.empty(); 
+    }
+
+    TwoNodes next() {
+	assert(is_returnable()); 
+	if (!has_next()) {
+	    return TwoNodes();
+	}
+	TwoNodes top = stack.back();
+	stack.pop_back();
+	while(!is_returnable()) {
+	    step_stack();
+	}
+	return top;
+    }    
+    
+
+};

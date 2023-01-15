@@ -15,7 +15,7 @@ endif
 
 
 
-geometry2D.o : geometry2D.cpp
+geometry2D.o : geometry2D.cpp geometry2D.h
 	$(CC) $(CFLAGS) -c geometry2D.cpp 
 
 

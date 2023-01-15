@@ -145,6 +145,39 @@ KDTree::~KDTree() {
     }
 }
 
+namespace {
+
+double range_distance(double amin, double amax, double bmin, double bmax) {
+    if (amax < bmin) 
+        return bmin - amax;
+    if (bmax < amin) 
+        return amin - bmax;
+    // the ranges intersect
+    return 0;
+}
+
+}
+
+Vec2 BBox::nearest_corner(Vec2 p) const {
+    return Vec2(p.x < (Cmin.x  + Cmax.x) / 2 ? Cmin.x : Cmax.x, 
+		p.y < (Cmin.y  + Cmax.y) / 2 ? Cmin.y : Cmax.y);
+}
+
+// shortest distance between the two
+double BBox::distance(const BBox & o) const {
+    double dy = range_distance(Cmin.y, Cmax.y, o.Cmin.y, o.Cmax.y); 
+    double dx = range_distance(Cmin.x, Cmax.x, o.Cmin.x, o.Cmax.x); 
+    if (dx != 0 && dy != 0) {
+	// it is a corner-wise distance
+	// which corner?
+	Vec2 c1 = nearest_corner(o.Cmin);
+	Vec2 c2 = o.nearest_corner(Cmin);
+	return c1.distance(c2);	
+    }
+    return std::max(dx, dy); 
+}
+
+
 void Node::split() {
     Vec2 v = bbox.Cmax - bbox.Cmin;
     BBox bbox1, bbox2; 

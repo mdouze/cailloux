@@ -61,7 +61,7 @@ def py_style_iterator(self):
 IntersectingLeavesIterator.__iter__ = py_style_iterator
 ShapeVectorIterator.__iter__ = py_style_iterator
 LeafIterator.__iter__ = py_style_iterator
-
+TwoLeavesIterator.__iter__ = py_style_iterator
 
 %}
 
