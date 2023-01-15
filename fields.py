@@ -64,7 +64,7 @@ def generate_circles_gravity(c0, r0, c1, r1, radiuses):
                         
                 
         # impossible to put this circle in the field
-        # print("REF c3s=", c3s)
+        # print(f"{i=:} REF c3s=", c3s)
         if len(c3s) == 0: 
             continue
         if True: 
@@ -295,7 +295,7 @@ def generate_circles_gravity_C_kdtree(c0, r0, c1, r1, radiuses):
     kdtree.add_shape(circles[0])        
     
     tot1 = tot2 = 0
-    for i, r3 in enumerate(radiuses): 
+    for it, r3 in enumerate(radiuses): 
         nc = len(circles)
         c3s = []
         
@@ -308,26 +308,49 @@ def generate_circles_gravity_C_kdtree(c0, r0, c1, r1, radiuses):
                     c3s.append(c3)
                     tot2 += 1
 
-        for j in range(nc):
-            cir1 = circles[j]
-            for k in range(j + 1, nc): 
-                cir2 = circles[k]
-                for c3 in contact_3circle_C(cir1, cir2, r3): 
-                    cir3 = make_circle_C(c3, r3)
-                    if not intersects_any_circle_C_kdtree(kdtree, cir3, exclude=[cir1.id, cir2.id]):
-                        if cir0.c.distance(c3) + r3 < r0:
-                            c3s.append(c3)
-                            tot2 += 1
+        seen = set()
+
+        def handle_circle_pair(cir1, cir2):            
+            k = tuple(sorted([cir1.id, cir2.id]))
+            # print("TRY", k)
+            if k in seen:
+                return
+            seen.add(k)                
+            for c3 in contact_3circle_C(cir1, cir2, r3):
+                #print("TRY", c3)
+                cir3 = make_circle_C(c3, r3)
+                if not intersects_any_circle_C_kdtree(kdtree, cir3, exclude=[cir1.id, cir2.id]):
+                    if cir0.c.distance(c3) + r3 < r0:
+                        c3s.append(c3)
+
+        # handle pairs of circles within a leaf 
+        for leaf in Cgeometry.LeafIterator(kdtree):
+            leaf_circles = [
+                Cgeometry.downcast_Circle(shape) for shape in Cgeometry.ShapeVectorIterator(leaf.shapes)
+            ]
+            # print(leaf_circles)
+            nc = len(leaf_circles)
+            for i in range(nc): 
+                for j in range(i + 1, nc):
+                    handle_circle_pair(leaf_circles[i], leaf_circles[j]) 
+
+        # handle pairs of circles between 2 leaves        
+        for twoleaves in Cgeometry.TwoLeavesIterator(kdtree, r3):
+            for cir1 in Cgeometry.ShapeVectorIterator(twoleaves.node1.shapes):
+                cir1 = Cgeometry.downcast_Circle(cir1)
+                for cir2 in Cgeometry.ShapeVectorIterator(twoleaves.node2.shapes):
+                    cir2 = Cgeometry.downcast_Circle(cir2)
+                    handle_circle_pair(cir1, cir2)
                         
-        # print("c3s=", c3s)     
+        # print(f"{it=:} NEW c3s=", c3s)     
         if len(c3s) == 0: 
             continue
         # pick the c3 that has lowest y
         c3s.sort(key=lambda c3: c3.y)
         c3 = c3s[0]
-        # print(f"{c3=:}")
-        circles.append(make_circle_C(c3, r3, i))
-        kdtree.add_shape(make_circle_C(c3, r3, i))
+        # print(f"NEW {c3=:}")
+        circles.append(make_circle_C(c3, r3, it))
+        kdtree.add_shape(make_circle_C(c3, r3, it))
         print(f"{i=:} nb circles: {len(circles)} "
               f"nb c3: {len(c3s)} {tot1=:} {tot2=:}", end="\r", flush=True)
 
