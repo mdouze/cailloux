@@ -290,7 +290,7 @@ class TestField(unittest.TestCase):
         )
         print()
 
-        circles_new = fields.generate_circles_gravity_C(
+        circles_new = fields.generate_circles_gravity_C_kdtree(
             np.array([0, 0]), 1,
             np.array([0, -1 + r0]), r0,
             radiuses[1:]

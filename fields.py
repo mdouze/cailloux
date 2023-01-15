@@ -269,9 +269,30 @@ def generate_circles_gravity_C(c0, r0, c1, r1, radiuses):
     return circles
 
 
+
+def intersects_any_circle_C_kdtree(kdtree, cir, exclude):
+    seen = set(exclude)
+    for node in Cgeometry.IntersectingLeavesIterator(kdtree, cir):
+        for shape in Cgeometry.ShapeVectorIterator(node.shapes):
+            if shape.id in seen:
+                continue
+            seen.add(shape.id)
+            cir2 = Cgeometry.downcast_Circle(shape)
+            if cir2.intersects(cir):
+                return True
+    return False
+    
+
+    
+
 def generate_circles_gravity_C_kdtree(c0, r0, c1, r1, radiuses): 
     cir0 = make_circle_C(c0, r0)
     circles = [make_circle_C(c1, r1, -1)]
+    kdtree = Cgeometry.KDTree(Cgeometry.BBox(
+        cir0.c.x - cir0.r, cir0.c.y - cir0.r,
+        cir0.c.x + cir0.r, cir0.c.y + cir0.r
+    ))
+    kdtree.add_shape(circles[0])        
     
     tot1 = tot2 = 0
     for i, r3 in enumerate(radiuses): 
@@ -283,7 +304,7 @@ def generate_circles_gravity_C_kdtree(c0, r0, c1, r1, radiuses):
             cir2 = circles[k]
             for c3 in contact_3circle_C(cir2, cir0, r3, inside_c2=True): 
                 cir3 = make_circle_C(c3, r3)
-                if not intersects_any_circle_C(cir3, circles, exclude=[cir2.id]): 
+                if not intersects_any_circle_C_kdtree(kdtree, cir3, exclude=[cir2.id]): 
                     c3s.append(c3)
                     tot2 += 1
 
@@ -293,8 +314,8 @@ def generate_circles_gravity_C_kdtree(c0, r0, c1, r1, radiuses):
                 cir2 = circles[k]
                 for c3 in contact_3circle_C(cir1, cir2, r3): 
                     cir3 = make_circle_C(c3, r3)
-                    if not intersects_any_circle_C(cir3, circles, exclude=[cir1.id, cir2.id]):
-                        if cir0.c.distance(c3) + r3 < r0: 
+                    if not intersects_any_circle_C_kdtree(kdtree, cir3, exclude=[cir1.id, cir2.id]):
+                        if cir0.c.distance(c3) + r3 < r0:
                             c3s.append(c3)
                             tot2 += 1
                         
@@ -306,6 +327,7 @@ def generate_circles_gravity_C_kdtree(c0, r0, c1, r1, radiuses):
         c3 = c3s[0]
         # print(f"{c3=:}")
         circles.append(make_circle_C(c3, r3, i))
+        kdtree.add_shape(make_circle_C(c3, r3, i))
         print(f"{i=:} nb circles: {len(circles)} "
               f"nb c3: {len(c3s)} {tot1=:} {tot2=:}", end="\r", flush=True)
 

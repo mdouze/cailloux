@@ -26,6 +26,11 @@ size_t swig_ptr_as_int(const void *x) {
     return (size_t)x;
 }
 
+Circle* downcast_Circle(Shape2D *shape) {
+   return dynamic_cast<Circle*>(shape);
+}
+
+
 %}
 
 
